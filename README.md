@@ -4,4 +4,5 @@ the project is based on Simbad Platform(so you should import the simbad-1.4.jar 
 
 # Reference
 [1. Wikipedia RRT Explaination] (https://en.wikipedia.org/wiki/Rapidly-exploring_random_tree)
+
 [2. rt_rrt* paper] (https://mediatech.aalto.fi/~phamalainen/FutureGameAnimation/p113-naderi.pdf)
