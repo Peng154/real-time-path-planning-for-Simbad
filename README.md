@@ -1,5 +1,6 @@
 # real-time-path-planning-for-Simbad
-   the project is based on Simbad Platform(so you should import the simbad-1.4.jar first),actually it use the RT-RRT* algorithm to reach the goal of realtime path planning, also provide simple RRT demo and simple RRT* algorithm demo.
+- the project is based on Simbad Platform(so you should import the simbad-1.4.jar first),actually it use the RT-RRT* algorithm to reach the goal of realtime path planning, also provide simple RRT demo and simple RRT* algorithm demo.
+- there is still some problem existing during path planning when the moving obstacle is extremely close to the robot. I think this situation may be related to the reason that the robot can not predict the moving direction of the moving_obstacles.
 
 ![Simulation Result](https://raw.githubusercontent.com/Peng154/real-time-path-planning-for-Simbad/master/rt_rrt_star.gif)
 
