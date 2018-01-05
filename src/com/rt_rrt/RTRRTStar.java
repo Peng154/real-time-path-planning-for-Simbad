@@ -76,22 +76,23 @@ public class RTRRTStar extends InformedRRTStar{
     private void updateBestPath(){
         Deque<RRTNode> updatePath = new LinkedList<>();
         RRTNode pathNode = target;
-        boolean currentPathBlocked = false;
+//        boolean currentPathBlocked = false;
         // 如果找到路径
         if(goalFound){
             do{
                 // 有可能动态障碍物处于到终点的路径上面
-                if(pathNode.costToRoot != Double.POSITIVE_INFINITY){
+//                if(pathNode.costToRoot != Double.POSITIVE_INFINITY){
                     currPath.addFirst(pathNode);
                     pathNode = rrt.getNode(pathNode.parentID);
-                }
-                else {
-                    currPath.clear();
-                    currentPathBlocked = true;
-                    break;
-                }
+//                }
+//                else {
+//                    currPath.clear();
+//                    currentPathBlocked = true;
+//                    break;
+//                }
             }while (pathNode != null);
-            if(!currentPathBlocked) return;
+//            if(!currentPathBlocked) return;
+            return;
         }
 
         RRTNode curr_node = root;
@@ -152,6 +153,9 @@ public class RTRRTStar extends InformedRRTStar{
             u.pos.x = v.pos.x + Params.epsilon * Math.cos(theta);
             u.pos.y = v.pos.y + Params.epsilon * Math.sin(theta);
         }
+        if(Double.isNaN(u.pos.x) || Double.isInfinite(u.pos.x) || Double.isNaN(u.pos.y) || Double.isInfinite(u.pos.y)){
+            return;
+        }
         // 检查点在障碍物之外
         if(!super.checkSample(u)){
             return;
@@ -170,6 +174,22 @@ public class RTRRTStar extends InformedRRTStar{
         rewireFromRoot();
     }
 
+    protected boolean checkSample(RRTNode n){
+        for(Obstacle o:moving_obstacles){
+            if(o.checkPosInObstacle(n.pos))
+                return false;
+        }
+        return super.checkSample(n);
+    }
+
+    protected boolean checkCollision(RRTNode s, RRTNode e){
+        for(Obstacle o:moving_obstacles){
+            if(o.checkLineCrossObstacle(s.pos, e.pos) || o.checkPosInObstacle(s.pos) || o.checkPosInObstacle(e.pos))
+                return false;
+        }
+        return super.checkCollision(s,e);
+    }
+
     /**
      * 在随机点附近对rrtTree进行重连
      */
@@ -179,7 +199,7 @@ public class RTRRTStar extends InformedRRTStar{
             List<RRTNode> nearNodes = super.findClosestNeighbours(Xr);
             List<RRTNode> safeNeighbours = new LinkedList<>();
             for (RRTNode n:nearNodes){
-                if(super.checkCollision(Xr, n)){
+                if(checkCollision(Xr, n)){
                     safeNeighbours.add(n);
                 }
             }
@@ -214,7 +234,7 @@ public class RTRRTStar extends InformedRRTStar{
             List<RRTNode> nearNodes = super.findClosestNeighbours(Xs);
             List<RRTNode> safeNeighbours = new LinkedList<>();
             for (RRTNode n:nearNodes){
-                if(super.checkCollision(Xs, n)){
+                if(checkCollision(Xs, n)){
                     safeNeighbours.add(n);
                 }
             }
@@ -251,6 +271,7 @@ public class RTRRTStar extends InformedRRTStar{
                 // 阻塞在障碍物里面的节点
                 for(RRTNode n:rrt.getRrtTree()){
                     if(o.checkPosInObstacle(n.pos)){
+//                        System.out.println("block node"+ n.pos);
                         n.costToRoot = Double.POSITIVE_INFINITY;
                     }
                 }
@@ -281,7 +302,7 @@ public class RTRRTStar extends InformedRRTStar{
         rrt.getRrtTree().add(n);
 
         if(getEuclideanDistance(n.pos, endPos) < Params.converge){
-            System.out.println("find path to goal");
+//            System.out.println("find path to goal");
             if(target == null || (target != null && target.costToRoot > n.costToRoot)){
                 target = n;
             }
@@ -317,6 +338,7 @@ public class RTRRTStar extends InformedRRTStar{
      */
     protected RRTNode sample(){
         double rand_num = Math.random();
+        RRTNode n = null;
         // 在线上取点。。。
         if(rand_num > 1-Params.alpha && SMP.target != null){
             double x = rand(SMP.root.pos.x, SMP.target.pos.x);
@@ -324,14 +346,17 @@ public class RTRRTStar extends InformedRRTStar{
             RRTNode new_node = new RRTNode();
             new_node.pos.x = x;
             new_node.pos.y = y;
-            return new_node;
+            n = new_node;
         }
         else if(rand_num >= (1-Params.alpha)/Params.beta && goalFound){
-            return sample(cost(target));
+            n = sample(cost(target));
         }
         else {
-            return super.sample();
+            n = super.sample();
         }
+
+        return n;
+
     }
 
     /**

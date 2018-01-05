@@ -72,7 +72,7 @@ public class SMP extends Planner{
 
     protected boolean checkCollision(RRTNode s, RRTNode e){
         for(Obstacle o:obstacles){
-            if(o.checkLineCrossObstacle(s.pos, e.pos))
+            if(o.checkLineCrossObstacle(s.pos, e.pos) || o.checkPosInObstacle(s.pos) || o.checkPosInObstacle(e.pos))
                 return false;
         }
         return true;

@@ -59,7 +59,8 @@ public class CircleObstacle extends Obstacle{
     }
 
     public void setPos(Vector2d pos) {
-        this.pos = pos;
+        this.pos.x = pos.x;
+        this.pos.y = pos.y;
     }
 
     public double getRadius() {

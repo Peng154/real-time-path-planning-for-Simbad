@@ -1,11 +1,13 @@
 package com.base;
 
 import com.rt_rrt.Params;
+import com.rt_rrt.SMP;
 import simbad.sim.Agent;
 import simbad.sim.Box;
 import simbad.sim.EnvironmentDescription;
 import simbad.sim.Wall;
 
+import javax.media.j3d.Transform3D;
 import javax.vecmath.Point3d;
 import javax.vecmath.Vector2d;
 import javax.vecmath.Vector3d;
@@ -61,15 +63,24 @@ public class Env extends EnvironmentDescription {
 
         // -----------------------------------------------------------------动态障碍物
         List<CircleObstacle> moving_obs = new ArrayList<>();
-        CircleObstacle mo1 = new CircleObstacle(0.31, 0.3, new Vector2d(0,0));
-        DynamicObstacle do1 = new DynamicObstacle(new Vector3d(0, 0, 0.7), "mo1", mo1);
+        CircleObstacle mo1 = new CircleObstacle(0.4, 0.3, new Vector2d(0,0));
         moving_obs.add(mo1);
+        DynamicObstacle do1 = new DynamicObstacle(new Vector3d(0, 0, 2), "mo1", mo1, 3.7);
         add(do1);
 
-        CircleObstacle mo2 = new CircleObstacle(0.31, 0.3, new Vector2d(0,0));
-        DynamicObstacle do2 = new DynamicObstacle(new Vector3d(4, 0, -5), "mo2", mo2);
+        CircleObstacle mo2 = new CircleObstacle(0.4, 0.3, new Vector2d(0,0));
         moving_obs.add(mo2);
+//        DynamicObstacle do2 = new DynamicObstacle(new Vector3d(4, 0, -4.7), "mo2", mo2, 3.3);
+        DynamicObstacle do2 = new DynamicObstacle(new Vector3d(4, 0, -4.7), "mo2", mo2);
         add(do2);
+
+        CircleObstacle mo3 = new CircleObstacle(0.4, 0.3, new Vector2d(0,0));
+        moving_obs.add(mo3);
+//        DynamicObstacle do3 = new DynamicObstacle(new Vector3d(-2, 0, -4.7), "mo3", mo3, 2.5);
+        DynamicObstacle do3 = new DynamicObstacle(new Vector3d(-2, 0, -3), "mo3", mo3, 4);
+        add(do3);
+
+
 
         Vector2d s = new Vector2d(-5.9,-5.9);
         Vector2d e = new Vector2d(6,-7.5);
@@ -91,10 +102,34 @@ public class Env extends EnvironmentDescription {
 class DynamicObstacle extends Agent {
 
     private CircleObstacle obstacle;
+    private boolean circle = true;
+    private Vector2d startPos = null;
+    private Vector2d endPos = null;
+    private Vector2d target = null;
 
     public DynamicObstacle(Vector3d arg0, String arg1, CircleObstacle obstacle) {
         super(arg0, arg1);
         this.obstacle = obstacle;
+    }
+
+    protected double getEuclideanDistance(Vector2d source, Vector2d dest){
+        Vector2d temp = new Vector2d();
+        temp.sub(dest,source);
+        return temp.length();
+    }
+
+    public DynamicObstacle(Vector3d arg0, String arg1, CircleObstacle obstacle, double length) {
+        super(arg0, arg1);
+        this.obstacle = obstacle;
+        circle = false;
+        // 设置横向移动终点
+        startPos = new Vector2d();
+        startPos.x = arg0.x;
+        startPos.y = arg0.z;
+        endPos = new Vector2d();
+        endPos.x = startPos.x;
+        endPos.y = startPos.y - length;
+        target = endPos;
     }
 
     /**
@@ -112,12 +147,62 @@ class DynamicObstacle extends Agent {
 
     @Override
     protected void initBehavior() {
-        setRotationalVelocity(Params.dyanamicRotationSpeed);
-        setTranslationalVelocity(2 * 1.5* Params.dyanamicRotationSpeed * getRadius());
+        if(circle){
+            setRotationalVelocity(Params.dyanamicRotationSpeed);
+            setTranslationalVelocity(2 * 1.5* Params.dyanamicRotationSpeed * getRadius());
+        }
     }
 
     @Override
     protected void performBehavior() {
+        // 更新动态机器人位置
         obstacle.setPos(getLocation());
+
+        if(target == null){
+            return;
+        }
+
+        Vector2d pos = getLocation();
+        // 到达目标点，停下来
+        if(getEuclideanDistance(target, getLocation()) < 0.05){
+//                System.out.println("get target");
+            setTranslationalVelocity(0);
+            setRotationalVelocity(0);
+        }else{
+            // 获取机器人角度
+            double[] mat = new double[16];
+            Transform3D t = new Transform3D();
+            this.getRotationTransform(t);
+            t.get(mat);
+            double theta = -Math.atan2(mat[2],mat[10]);
+            // 目标点角度
+            double alpha = Math.atan2(target.y-pos.y, target.x-pos.x);
+            double error = theta - alpha;
+
+//                System.out.println("theta: "+theta+", alpha:"+alpha);
+            if(Math.abs(error) < 0.08){
+//                    System.out.println("right direction");
+                // 角度对了，不旋转
+                setRotationalVelocity(0);
+                setTranslationalVelocity(Params.lineDynamicRobotSpeed);
+            }
+            else{
+                // 角度不对，只旋转
+                if(error > 0){
+                    setRotationalVelocity(3);
+                }
+                else {
+                    setRotationalVelocity(-3);
+                }
+            }
+        }
+
+        if(getEuclideanDistance(pos, endPos) < 0.05){
+            target = startPos;
+        }
+        else if(getEuclideanDistance(pos, startPos) < 0.05){
+            target = endPos;
+        }
+
     }
 }

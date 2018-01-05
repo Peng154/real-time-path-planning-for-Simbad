@@ -18,6 +18,7 @@ public class Robot extends Agent {
     RTRRTStar rtrrtStar;
     private boolean planner = true;
     private Deque<RRTNode> path;
+    private Vector2d target = null;
 
     public Robot(Vector3d position, String name, List<Obstacle> obstacles, Vector2d startPos, Vector2d endPos, List<Double> boundaries, List<CircleObstacle> m_obs) {
         super(position, name);
@@ -45,6 +46,9 @@ public class Robot extends Agent {
     }
 
     protected double getEuclideanDistance(Vector2d source, Vector2d dest){
+        if(source == null || dest == null){
+            return Double.POSITIVE_INFINITY;
+        }
         Vector2d temp = new Vector2d();
         temp.sub(dest,source);
         return temp.length();
@@ -64,8 +68,9 @@ public class Robot extends Agent {
 
             // 根据移动机器人阻塞节点
             rtrrtStar.blockNodes(this);
-
-            Vector2d target = SMP.root.pos;
+            // 只有当下一个目标节点没有被动态障碍物阻塞的时候，才会继续前进
+            if(!Double.isInfinite(SMP.root.costToRoot))
+                 target = SMP.root.pos;
             Vector2d pos = getLocation();
 //            if(getCounter() % 40 == 0){
 //                System.out.println(target);
@@ -87,9 +92,7 @@ public class Robot extends Agent {
                 double alpha = Math.atan2(target.y-pos.y, target.x-pos.x);
                 double error = theta - alpha;
 
-//                System.out.println("theta: "+theta+", alpha:"+alpha);
                 if(Math.abs(error) < 0.08){
-//                    System.out.println("right direction");
                     // 角度对了，不旋转
                     setRotationalVelocity(0);
                     setTranslationalVelocity(Params.robotSpeed);
